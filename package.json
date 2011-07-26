@@ -1,0 +1,14 @@
+{
+    "name": "prologjs",
+    "description": "Prolog interpreter for node",
+    "version": "0.1.0",
+    "author": "Aleksis Brezas <abresas@kamibu.com>",
+    "contributors": [
+        { "name": "Aleksis Brezas", "email": "abresas@kamibu.com" }
+    ],
+    "licenses": [ {
+        "type": "MIT"
+    } ],
+    "engine": [ "node >=0.4.0" ],
+    "main": "./main"
+}

@@ -1,0 +1,3 @@
+Prolog interpreter for node.js
+
+This is based on the jsprolog project which you can find from the original author's website: http://ioctl.org/logic/prolog-latest, but it is almost entirely rewritten. 
