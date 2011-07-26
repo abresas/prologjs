@@ -56,15 +56,16 @@ Tokenizer.prototype.consumeVariable = function() {
 };
 
 Tokenizer.prototype.consumeString = function() {
-    if ( this.remainder[ 0 ] != '"' && this.remainder[ 0 ] != "'" ) {
+    var type = this.remainder[ 0 ],
+        start = 1,
+        closeIndex;
+
+    if ( type != '"' && type != "'" ) {
         return false;
     }
 
-    var type = this.remainder[ 0 ];
-    var start = 1;
-
     while ( true ) {
-        var closeIndex = this.remainder.indexOf( type, start );
+        closeIndex = this.remainder.indexOf( type, start );
         if ( closeIndex == -1 ) {
             return false;
         }

@@ -77,7 +77,7 @@ Prover.prototype._unify = function( rule, target, callback ) {
     }
 
     // will check one condition for now, and will assume it is not a built-in
-    var rule = rule.body.list[ 0 ];
+    rule = rule.body.list[ 0 ];
     var func = this.userFunctions[ rule.name ];
     if ( !func ) {
         console.log( 'unknown condition: ' + rule.name );
@@ -85,7 +85,7 @@ Prover.prototype._unify = function( rule, target, callback ) {
     }
     
     var args = [];
-    for ( var i = 0; i < rule.partlist.length; ++i ) {
+    for ( i = 0; i < rule.partlist.length; ++i ) {
         args.push( rule.partlist[ i ].name );
     }
 

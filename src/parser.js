@@ -14,7 +14,7 @@ parser.getBody = function( tokenizer ) {
 
     var term, list = [], string = tokenizer.remainder;
 
-    while ( ( term = parser.getTerm( tokenizer ) ) != null ) {
+    while ( ( term = parser.getTerm( tokenizer ) ) !== null ) {
         list.push( term );
         if ( tokenizer.current != "," ) { 
             break;
@@ -30,12 +30,13 @@ parser.getBody = function( tokenizer ) {
 };
 
 parser.getRule = function( ruleString ) {
-    var tokenizer = new Tokenizer( ruleString );
-    var head = parser.getTerm( tokenizer );
+    var tokenizer = new Tokenizer( ruleString ),
+        head = parser.getTerm( tokenizer ),
+        body;
 
     if ( tokenizer.current == ':-' ) {
         tokenizer.consume();
-        var body = this.getBody( tokenizer );
+        body = this.getBody( tokenizer );
         
         if ( tokenizer.current != '.' ) {
             throw 'error parsing rule "' + ruleString + '". expected "." after body, got: "' + tokenizer.current + '"';
@@ -43,7 +44,7 @@ parser.getRule = function( ruleString ) {
     }
     else if ( tokenizer.current == '.' ) {
         // simple rule
-        var body = null;
+        body = null;
     }
     else {
         throw 'error parsing rule "' + ruleString + '". expected "." or ":-", got: "' + tokenizer.current + '"';
@@ -200,7 +201,7 @@ parser.getParameters = function( tokenizer ) {
                 }
 
                 var part = parser.getParameters( tokenizer );
-                if ( part == null ) {
+                if ( !part ) {
                     return null;
                 }
 
