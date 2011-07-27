@@ -1,4 +1,4 @@
-var EventWaiter = require( './eventwaiter' );
+var Query = require( './query' );
 
 var Prover = function( rules ) {
     this.userFunctions = {};
@@ -32,12 +32,12 @@ Prover.prototype.removeFunction = function( name ) {
     delete this.userFunctions[ name ];
 };
 
-Prover.prototype._unify = function( rule, target, callback ) {
+Prover.prototype._unify = function( rule, target ) {
     var head = rule.head;
 
     // basic checks
     if ( head.name != target.name || head.partlist.length != target.partlist.length ) {
-        return callback( false );
+        return false;
     }
 
     var variables = {};
@@ -46,14 +46,14 @@ Prover.prototype._unify = function( rule, target, callback ) {
         var t_arg = target.partlist[ i ];
         var r_arg = head.partlist[ i ];
         if ( t_arg.type != r_arg.type && t_arg.type != 'Variable' ) {
-            return callback( false );
+            return false;
         }
         if ( t_arg.type == 'Atom' ) {
             if ( t_arg.name == r_arg.name ) { 
                 continue;
             }
             // else 
-            return callback( false );
+            return false;
         }
         if ( t_arg.type == 'Variable' && r_arg.type != 'Variable' ) {
             if ( t_arg.name == '_' ) {
@@ -69,74 +69,80 @@ Prover.prototype._unify = function( rule, target, callback ) {
         // should check for (Atom/Term,Variable) and (Variable,Variable) too but not needed for now
     }
 
-    // so far so good with the head, now check body
-    
-    if ( !rule.body ) {
-        // easy one, no conditions
-        return callback( variables );
-    }
+    return variables;
+};
 
+Prover.prototype.proveBody = function( query, variables, rule ) {
     // will check one condition for now, and will assume it is not a built-in
-    rule = rule.body.list[ 0 ];
-    var func = this.userFunctions[ rule.name ];
+    var rule = rule.body.list[ 0 ],
+        func = this.userFunctions[ rule.name ],
+        args = [],
+        rCallback;
+
     if ( !func ) {
-        console.log( 'unknown condition: ' + rule.name );
-        return callback( false );
+         console.warn( 'prologjs: unknown condition: ' + rule.name );
+         return;
     }
     
-    var args = [];
     for ( i = 0; i < rule.partlist.length; ++i ) {
         args.push( rule.partlist[ i ].name );
     }
 
     args.push( this.userData.slice() );
 
+    rCallback = query.createResultCallback();
+
     args.push( function( result ) {
+        /*
+        console.log( 'prologjs: got callback result' );
+        console.log( result );
+        console.log( 'variables are' );
+        console.log( variables );
+        */
         if ( rule.negative ) {
             result = !result;
         }
         if ( result ) {
-            return callback( variables );
+            return rCallback( variables );
         }
-        // else
-        callback( false );
+        // else do nothing
+        rCallback( false );
     } );
 
     func.apply( {}, args );
 };
 
-Prover.prototype.prove = function( query, cb ) {
-    var results = {};
+Prover.prototype.proveRule = function( query, rule ) {
+    var variables = this._unify( rule, query.currentRule );
 
-    var waiter = new EventWaiter();
-    waiter.disable();
-    waiter.on( 'one', function( variables ) {
-        if ( !variables ) {
-            return;
-        }
-        for ( var name in variables ) {
-            // console.log( 'var ' + name + ' = ' + variables[ name ] );
-            if ( results[ name ] ) {
-                Array.prototype.push.apply( results[ name ], variables[ name ] );
-                continue;
-            }
-            // else 
-            results[ name ] = variables[ name ].slice();
-        }
-    } );
-    waiter.on( 'complete', function() {
-        cb( results );
-    } );
+    if ( !variables ) {
+        return;
+    }
+    // so far so good with the head, now check body
+    
+    if ( !rule.body ) {
+        // easy one, no conditions
+        query.extendResults( variables );
+        return;
+   }
 
-    var target = parser.getBody( query ).list[ 0 ];
+    this.proveBody( query, variables, rule );
+};
+
+Prover.prototype.prove = function( queryString, cb ) {
+    var query = new Query( queryString, cb );
+
+    query.currentRule = parser.getBody( query.string ).list[ 0 ];
     for ( var i in this.rules ) {
-        var rule = this.rules[ i ];
-        if ( !rule.head ) {
-            console.log( "NO RULE HEAD ERROR: " + rule );
-            break;
-        }
-        this._unify( rule, target, waiter.createCallback() );
+        this.proveRule( query, this.rules[ i ]  );
     }
 
-    waiter.enable();
+    setTimeout( function() {
+        // in case no callback was needed and complete wasn't fired
+        // this could be better if query api was always async
+        // but that would have its own quirks too
+        if ( !query.waiting ) {
+            query.emit( 'complete' );
+        }
+    }, 0 );
 };

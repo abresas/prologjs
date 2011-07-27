@@ -27,13 +27,17 @@ EventWaiter.prototype.createCallback = function() {
 
     var self = this;
     return function() {
+        if ( !self.waiting ) {
+            console.warn( 'prologjs: callback called when not waiting' );
+            return;
+        }
         --self.waiting;
         var args = [ 'one' ];
         for ( var i in arguments ) {
             args.push( arguments[ i ] );
         }
         self.emit.apply( self, args );
-        if ( self.enabled ) {
+        if ( self.enabled && !self.waiting ) {
             self.emit( 'complete' );
         }
     };

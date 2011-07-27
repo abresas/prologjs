@@ -17,7 +17,6 @@ function load( path, callback ) {
             rules.push( parsedRule );
         }
 
-
         callback( new Prover( rules ) );
     } );
 }
